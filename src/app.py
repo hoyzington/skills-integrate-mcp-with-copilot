@@ -129,7 +129,15 @@ def teacher_login(credentials: TeacherLogin, request: Request):
             status_code=503, detail="Teacher login is not configured"
         ) from error
 
-    if not password_hash or not verify_password(credentials.password, password_hash):
+    # Always run PBKDF2 to avoid revealing whether the username exists.
+    password_matches = verify_password(
+        credentials.password,
+        password_hash or (
+            "pbkdf2_sha256$310000$00000000000000000000000000000000$"
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        ),
+    )
+    if not password_hash or not password_matches:
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
     request.session.clear()
