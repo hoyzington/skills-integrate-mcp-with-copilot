@@ -1,0 +1,8 @@
+{
+  "teachers": [
+    {
+      "username": "replace-with-teacher-username",
+      "password_hash": "replace-with-hash-generated-by-python-src-auth.py"
+    }
+  ]
+}
