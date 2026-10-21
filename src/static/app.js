@@ -197,6 +197,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showMessage(result.detail || "An error occurred", "error");
         if (response.status === 401) {
           await refreshTeacherSession();
+          await fetchActivities();
         }
       }
     } catch (error) {
