@@ -5,14 +5,28 @@ A super simple FastAPI application that allows students to view and sign up
 for extracurricular activities at Mergington High School.
 """
 
-from fastapi import FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
+from pydantic import BaseModel
 import os
 from pathlib import Path
+import secrets
+from starlette.middleware.sessions import SessionMiddleware
+
+from auth import load_teacher_credentials, verify_password
 
 app = FastAPI(title="Mergington High School API",
               description="API for viewing and signing up for extracurricular activities")
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.environ.get("ADMIN_SESSION_SECRET") or secrets.token_urlsafe(32),
+    session_cookie="teacher_session",
+    max_age=8 * 60 * 60,
+    same_site="lax",
+    https_only=os.environ.get("COOKIE_SECURE", "").lower() in {"1", "true", "yes"},
+)
 
 # Mount the static files directory
 current_dir = Path(__file__).parent
@@ -88,8 +102,59 @@ def get_activities():
     return activities
 
 
+class TeacherLogin(BaseModel):
+    username: str
+    password: str
+
+
+def require_teacher(request: Request) -> str:
+    teacher = request.session.get("teacher")
+    if not teacher:
+        raise HTTPException(status_code=401, detail="Teacher login required")
+    return teacher
+
+
+@app.get("/auth/me")
+def get_teacher_session(request: Request):
+    teacher = request.session.get("teacher")
+    return {"authenticated": bool(teacher), "username": teacher}
+
+
+@app.post("/auth/login")
+def teacher_login(credentials: TeacherLogin, request: Request):
+    try:
+        password_hash = load_teacher_credentials().get(credentials.username)
+    except (OSError, ValueError) as error:
+        raise HTTPException(
+            status_code=503, detail="Teacher login is not configured"
+        ) from error
+
+    # Always run PBKDF2 to avoid revealing whether the username exists.
+    password_matches = verify_password(
+        credentials.password,
+        password_hash or (
+            "pbkdf2_sha256$310000$00000000000000000000000000000000$"
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        ),
+    )
+    if not password_hash or not password_matches:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    request.session.clear()
+    request.session["teacher"] = credentials.username
+    return {"authenticated": True, "username": credentials.username}
+
+
+@app.post("/auth/logout")
+def teacher_logout(request: Request):
+    request.session.clear()
+    return {"authenticated": False}
+
+
 @app.post("/activities/{activity_name}/signup")
-def signup_for_activity(activity_name: str, email: str):
+def signup_for_activity(
+    activity_name: str, email: str, teacher: str = Depends(require_teacher)
+):
     """Sign up a student for an activity"""
     # Validate activity exists
     if activity_name not in activities:
@@ -111,7 +176,9 @@ def signup_for_activity(activity_name: str, email: str):
 
 
 @app.delete("/activities/{activity_name}/unregister")
-def unregister_from_activity(activity_name: str, email: str):
+def unregister_from_activity(
+    activity_name: str, email: str, teacher: str = Depends(require_teacher)
+):
     """Unregister a student from an activity"""
     # Validate activity exists
     if activity_name not in activities:

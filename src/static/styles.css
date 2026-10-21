@@ -16,16 +16,65 @@ body {
 }
 
 header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 112px;
   text-align: center;
-  padding: 20px 0;
+  padding: 20px 190px;
   margin-bottom: 30px;
   background-color: #1a237e;
   color: white;
   border-radius: 5px;
 }
 
+.header-copy h1 {
+  margin-bottom: 10px;
+}
+
 header h1 {
   margin-bottom: 10px;
+}
+
+.teacher-tools {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 1;
+  text-align: right;
+}
+
+.teacher-login-form {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 260px;
+  padding: 16px;
+  border-radius: 5px;
+  background: white;
+  color: #333;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.teacher-session {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.teacher-tools button {
+  padding: 8px 12px;
+}
+
+.teacher-login-form button {
+  width: 100%;
+}
+
+.teacher-login-form .form-group:last-of-type {
+  margin-bottom: 12px;
 }
 
 main {
@@ -190,6 +239,34 @@ button:hover {
 
 .hidden {
   display: none;
+}
+
+@media (max-width: 640px) {
+  header {
+    display: block;
+    min-height: auto;
+    padding: 18px 16px;
+  }
+
+  .teacher-tools {
+    position: static;
+    margin-top: 14px;
+    text-align: center;
+  }
+
+  .teacher-login-form {
+    position: static;
+    width: min(100%, 320px);
+    margin: 10px auto 0;
+  }
+
+  .teacher-session {
+    justify-content: center;
+  }
+
+  .teacher-session.hidden {
+    display: none;
+  }
 }
 
 footer {
