@@ -74,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
         activityCard.append(title, description, schedule, availability);
 
         const participantsContainer = document.createElement("div");
-        participantsContainer.className = "participants-container";
+        participantsContainer.className = "participants-container participants-section";
         if (details.participants.length > 0) {
           const participantsHeading = document.createElement("h5");
           participantsHeading.textContent = "Participants:";
